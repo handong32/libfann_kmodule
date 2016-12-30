@@ -82,21 +82,25 @@ FANN_EXTERNAL void FANN_API fann_destroy_train(struct fann_train_data *data)
 /*
  * Test a set of training data and calculate the MSE 
  */
-/*FANN_EXTERNAL float FANN_API fann_test_data(struct fann *ann, struct fann_train_data *data)
+FANN_EXTERNAL void FANN_API fann_test_data(struct fann *ann, struct fann_train_data *data, float* ret)
 {
 	unsigned int i;
 	if(fann_check_input_output_sizes(ann, data) == -1)
-		return 0;
+	{
+	    *ret = 0;
+	    return;
+	}
 	
 	fann_reset_MSE(ann);
 
 	for(i = 0; i != data->num_data; i++)
 	{
-		fann_test(ann, data->input[i], data->output[i]);
+	    fann_test(ann, data->input[i], data->output[i]);
 	}
 
-	return fann_get_MSE(ann);
-}*/
+        fann_get_MSE(ann, ret);
+	return;
+}
 
 #ifndef FIXEDFANN
 
@@ -280,6 +284,7 @@ FANN_EXTERNAL void FANN_API fann_train_on_data(struct fann *ann, struct fann_tra
 	float error;
 	unsigned int i;
 	int desired_error_reached;
+	char tbuf[100];
 
 #ifdef DEBUG
 	printk("Training with %s\n", FANN_TRAIN_NAMES[ann->training_algorithm]);
@@ -287,10 +292,8 @@ FANN_EXTERNAL void FANN_API fann_train_on_data(struct fann *ann, struct fann_tra
 
 	if(epochs_between_reports && ann->callback == NULL)
 	{
-	    //printk("Max epochs %8d. Desired error: %.10f.\n", max_epochs, desired_error);
-	    printk("Max epochs %8d. Desired error: %d.%d\n", max_epochs, icomp(desired_error), fcomp(desired_error));
+	    printk("Max epochs %8d. Desired error: %.10f.\n", max_epochs, desired_error);
 	}
-	//return;
 	
 	for(i = 1; i <= max_epochs; i++)
 	{
@@ -312,8 +315,10 @@ FANN_EXTERNAL void FANN_API fann_train_on_data(struct fann *ann, struct fann_tra
 			{
 			    /*printk("Epochs     %8d. Current error: %.10f. Bit fail %d.\n", i, error,
 			      ann->num_bit_fail);*/
-			    printk("Epochs     %8d. Current error: %d.%d, Bit fail %d.\n", i, icomp(error), fcomp(error),
-			      ann->num_bit_fail);
+			    mftoa(error, &(tbuf[0]), 5);
+
+			    printk("Epochs     %8d. Current error: %s, Bit fail %d.\n", i, tbuf,
+				   ann->num_bit_fail);
 			}
 			else if(((*ann->callback)(ann, data, max_epochs, epochs_between_reports, 
 									  desired_error, i)) == -1)
@@ -327,10 +332,11 @@ FANN_EXTERNAL void FANN_API fann_train_on_data(struct fann *ann, struct fann_tra
 		}
 
 		if(desired_error_reached == 0)
-		{
+		    break;
+		/*{
 		    printk("desired_error_reached %d\n", desired_error_reached);
 			break;
-		}
+			}*/
 	}
 }
 

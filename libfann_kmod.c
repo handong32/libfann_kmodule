@@ -302,11 +302,14 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
 static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, loff_t *offset){
     int i, s, e;
     char tmp[20];
+    char tbuf[100];
     char *tok, *end;
     long ret;
     int nd, ni, no;
     int cio;
-
+    float tmp2;
+    fann_type *calc_out;
+	
     const float desired_error = (const float) 0;
     const unsigned int max_epochs = 100;
     const unsigned int epochs_between_reports = 1;
@@ -398,6 +401,33 @@ static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, lof
 
     printk("Training network.\n");
     fann_train_on_data(ann, data, max_epochs, epochs_between_reports, desired_error);
+
+    fann_test_data(ann, data, &tmp2);
+    mftoa(tmp2, &(tbuf[0]), 5);
+    printk("Testing network. %s\n", tbuf); 
+
+    for(i = 0; i < fann_length_train_data(data); i++)
+    {
+	//fann_reset_MSE(ann);
+	calc_out = fann_run(ann, data->input[i]);
+	mftoa(data->input[i][0], &(tbuf[0]), 5);
+	printk("XOR test (%s", tbuf);
+	
+	mftoa(data->input[i][1], &(tbuf[0]), 5);
+	printk(", %s) -> ", tbuf);
+	
+	mftoa(calc_out[0], &(tbuf[0]), 5);
+	printk("%s, should be ", tbuf);
+	
+	mftoa(data->output[i][0], &(tbuf[0]), 5);
+	printk("%s, difference=", tbuf);
+	
+	mftoa((float) fann_abs(calc_out[0] - data->output[i][0]), &(tbuf[0]), 5);
+	printk("%s\n", tbuf);
+    }    
+    
+    //fann_print_connections(ann);
+    //fann_print_parameters(ann);
     
     return Buf_Char;
 }

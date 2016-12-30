@@ -665,8 +665,8 @@ FANN_EXTERNAL fann_type *FANN_API fann_run(struct fann * ann, fann_type * input)
 	struct fann_neuron *first_neuron = ann->first_layer->first_neuron;
 	fann_type max_sum = 0;	
 
-	int c = 0;
-	int c2 = 0;
+	//int c = 0;
+	//int c2 = 0;
 	
 	/* first set the input */
 	num_input = ann->num_input;
@@ -1169,12 +1169,14 @@ FANN_EXTERNAL void FANN_API fann_init_weights(struct fann *ann, struct fann_trai
 	unsigned int dat = 0, elem, num_connect, num_hidden_neurons;
 	struct fann_layer *layer_it;
 	struct fann_neuron *neuron_it, *last_neuron, *bias_neuron;
+	float scale_factor;
+	char tbuf[100];
 	double tmp = 0.0;
 	
 /*#ifdef FIXEDFANN
 	unsigned int multiplier = ann->multiplier;
 	#endif*/
-        float scale_factor;
+        
 
 	for(smallest_inp = largest_inp = train_data->input[0][0]; dat < train_data->num_data; dat++)
 	{
@@ -1202,7 +1204,8 @@ FANN_EXTERNAL void FANN_API fann_init_weights(struct fann *ann, struct fann_trai
 	//printk(KERN_INFO "Initializing weights with scale factor %f\n", scale_factor);
 	
 	//printk(KERN_INFO "Initializing weights with scale factor %d\n", (int)(scale_factor*1000000.0));
-	printk("Initializing weights with scale factor %d.%d\n", icomp(scale_factor), fcomp(scale_factor));
+	mftoa(scale_factor, &(tbuf[0]), 5);
+	printk("Initializing weights with scale factor %s\n", tbuf);
 #endif
 	bias_neuron = ann->first_layer->last_neuron - 1;
 	for(layer_it = ann->first_layer + 1; layer_it != ann->last_layer; layer_it++)
@@ -1252,8 +1255,9 @@ FANN_EXTERNAL void FANN_API fann_init_weights(struct fann *ann, struct fann_trai
 
 FANN_EXTERNAL void FANN_API fann_print_parameters(struct fann *ann)
 {
-/*
-	struct fann_layer *layer_it;
+    char tbuf[100];
+    struct fann_layer *layer_it;
+    
 #ifndef FIXEDFANN
 	unsigned int i;
 #endif
@@ -1275,7 +1279,8 @@ FANN_EXTERNAL void FANN_API fann_print_parameters(struct fann *ann)
 	printk(KERN_INFO "Output layer                         :%4d neurons\n", ann->num_output);
 	printk(KERN_INFO "Total neurons and biases             :%4d\n", fann_get_total_neurons(ann));
 	printk(KERN_INFO "Total connections                    :%4d\n", ann->total_connections);
-	printk(KERN_INFO "Connection rate                      :%8.3f\n", ann->connection_rate);
+	mftoa(ann->connection_rate, &(tbuf[0]), 5);
+	printk(KERN_INFO "Connection rate                      :%s\n", tbuf);
 	printk(KERN_INFO "Network type                         :   %s\n", FANN_NETTYPE_NAMES[ann->network_type]);
 #ifdef FIXEDFANN
 	printk(KERN_INFO "Decimal point                        :%4d\n", ann->decimal_point);
@@ -1288,37 +1293,67 @@ FANN_EXTERNAL void FANN_API fann_print_parameters(struct fann *ann)
 #ifdef FIXEDFANN
 	printk(KERN_INFO "Bit fail limit                       :%4d\n", ann->bit_fail_limit);
 #else
-	printk(KERN_INFO "Bit fail limit                       :%8.3f\n", ann->bit_fail_limit);
-	printk(KERN_INFO "Learning rate                        :%8.3f\n", ann->learning_rate);
-	printk(KERN_INFO "Learning momentum                    :%8.3f\n", ann->learning_momentum);
-	printk(KERN_INFO "Quickprop decay                      :%11.6f\n", ann->quickprop_decay);
-	printk(KERN_INFO "Quickprop mu                         :%8.3f\n", ann->quickprop_mu);
-	printk(KERN_INFO "RPROP increase factor                :%8.3f\n", ann->rprop_increase_factor);
-	printk(KERN_INFO "RPROP decrease factor                :%8.3f\n", ann->rprop_decrease_factor);
-	printk(KERN_INFO "RPROP delta min                      :%8.3f\n", ann->rprop_delta_min);
-	printk(KERN_INFO "RPROP delta max                      :%8.3f\n", ann->rprop_delta_max);
-	printk(KERN_INFO "Cascade output change fraction       :%11.6f\n", ann->cascade_output_change_fraction);
-	printk(KERN_INFO "Cascade candidate change fraction    :%11.6f\n", ann->cascade_candidate_change_fraction);
+	mftoa(ann->bit_fail_limit, &(tbuf[0]), 5);
+	printk(KERN_INFO "Bit fail limit                       :%s\n", tbuf);
+	
+	mftoa(ann->learning_rate, &(tbuf[0]), 5);
+	printk(KERN_INFO "Learning rate                        :%s\n", tbuf);
+	
+	mftoa(ann->learning_momentum, &(tbuf[0]), 5);
+	printk(KERN_INFO "Learning momentum                    :%s\n", tbuf);
+	
+	mftoa(ann->quickprop_decay, &(tbuf[0]), 5);
+	printk(KERN_INFO "Quickprop decay                      :%s\n", tbuf);
+	
+	mftoa(ann->quickprop_mu, &(tbuf[0]), 5);
+	printk(KERN_INFO "Quickprop mu                         :%s\n", tbuf);
+	
+	mftoa(ann->rprop_increase_factor, &(tbuf[0]), 5);
+	printk(KERN_INFO "RPROP increase factor                :%s\n", tbuf);
+	
+	mftoa(ann->rprop_decrease_factor, &(tbuf[0]), 5);
+	printk(KERN_INFO "RPROP decrease factor                :%s\n", tbuf);
+	
+	mftoa(ann->rprop_delta_min, &(tbuf[0]), 5);
+	printk(KERN_INFO "RPROP delta min                      :%s\n", tbuf);
+
+	mftoa(ann->rprop_delta_max, &(tbuf[0]), 5);
+	printk(KERN_INFO "RPROP delta max                      :%s\n", tbuf);
+
+	mftoa(ann->cascade_output_change_fraction, &(tbuf[0]), 5);
+	printk(KERN_INFO "Cascade output change fraction       :%s\n", tbuf);
+
+	mftoa(ann->cascade_candidate_change_fraction, &(tbuf[0]), 5);
+	printk(KERN_INFO "Cascade candidate change fraction    :%s\n", tbuf);
+
 	printk(KERN_INFO "Cascade output stagnation epochs     :%4d\n", ann->cascade_output_stagnation_epochs);
 	printk(KERN_INFO "Cascade candidate stagnation epochs  :%4d\n", ann->cascade_candidate_stagnation_epochs);
 	printk(KERN_INFO "Cascade max output epochs            :%4d\n", ann->cascade_max_out_epochs);
 	printk(KERN_INFO "Cascade min output epochs            :%4d\n", ann->cascade_min_out_epochs);
 	printk(KERN_INFO "Cascade max candidate epochs         :%4d\n", ann->cascade_max_cand_epochs);
 	printk(KERN_INFO "Cascade min candidate epochs         :%4d\n", ann->cascade_min_cand_epochs);
-	printk(KERN_INFO "Cascade weight multiplier            :%8.3f\n", ann->cascade_weight_multiplier);
-	printk(KERN_INFO "Cascade candidate limit              :%8.3f\n", ann->cascade_candidate_limit);
+
+	mftoa(ann->cascade_weight_multiplier, &(tbuf[0]), 5);
+	printk(KERN_INFO "Cascade weight multiplier            :%s\n", tbuf);
+
+	mftoa(ann->cascade_candidate_limit, &(tbuf[0]), 5);
+	printk(KERN_INFO "Cascade candidate limit              :%s\n", tbuf);
+	
 	for(i = 0; i < ann->cascade_activation_functions_count; i++)
 		printk(KERN_INFO "Cascade activation functions[%d]      :   %s\n", i,
 			FANN_ACTIVATIONFUNC_NAMES[ann->cascade_activation_functions[i]]);
 	for(i = 0; i < ann->cascade_activation_steepnesses_count; i++)
-		printk(KERN_INFO "Cascade activation steepnesses[%d]    :%8.3f\n", i,
-			ann->cascade_activation_steepnesses[i]);
-		
+	{
+	    mftoa(ann->cascade_activation_steepnesses[i], &(tbuf[0]), 5);
+	    printk(KERN_INFO "Cascade activation steepnesses[%d]    :%s\n", i,
+		   tbuf);
+	}
+	
 	printk(KERN_INFO "Cascade candidate groups             :%4d\n", ann->cascade_num_candidate_groups);
 	printk(KERN_INFO "Cascade no. of candidates            :%4d\n", fann_get_cascade_num_candidates(ann));
-*/	
+	
 //	/* TODO: dump scale parameters */
-//#endif*/
+#endif
 }
 
 FANN_GET(unsigned int, num_input)
