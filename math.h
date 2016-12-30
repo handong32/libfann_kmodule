@@ -383,6 +383,6 @@ void mcos(double, double*);
 void mmodf(double, double*, double*);
 int icomp(double x);
 int fcomp(double x);
-char* mftoa(double f, char * buf, int precision);
+void mftoa(double f, char * buf, int precision);
 
 #endif

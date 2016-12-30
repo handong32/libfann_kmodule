@@ -6,7 +6,7 @@ libfann-objs	:= math.o twister.o libfann_kmod.o src/fann.o src/fann_cascade.o sr
 
 all:
 	make -C /lib/modules/$(shell uname -r)/build/ M=$(PWD) $(EXTRA_CFLAGS) modules
-	$(CC) test.c -o test
+	$(CC) test.c -o test -lm
 
 rmmod:
 	sudo rmmod libfann

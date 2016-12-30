@@ -91,8 +91,8 @@ long nn_ioctl(struct file* file,
 		  unsigned int ioctl_num,
 		  unsigned long ioctl_param)
 {
-    double test, test2;
-    char tbuf[15];
+    double test;
+    char tbuf[100];
 /*    struct timeval time;
     unsigned long local_time;*/
 /*switch(ioctl_num) 
@@ -132,28 +132,33 @@ long nn_ioctl(struct file* file,
     /* seedMT(4357U); */
     /* printk(KERN_INFO "rand = %lu\n", (unsigned long) randomMT()); */
 
-    kernel_fpu_begin();
     mexp(5.0, &test);
-    printk(KERN_INFO "mexp = %s\n", mftoa(test, &(tbuf[0]), 10));
+    mftoa(test, &(tbuf[0]), 5);
+    printk("mexp = %s\n", tbuf);
 
-    mlog(5.5, &test2);
-    printk(KERN_INFO "mlog = %s\n", mftoa(test2, &(tbuf[0]), 10));
+    mlog(5.5, &test);
+    mftoa(test, &(tbuf[0]), 5);
+    printk("mlog = %s\n", tbuf);
 
-    mpow(7.0, 3.0, &test2);
-    printk(KERN_INFO "7 ^ 3 = %s\n", mftoa(test2, &(tbuf[0]), 10));
+    mpow(7.0, 3.0, &test);
+    mftoa(test, &(tbuf[0]), 5);
+    printk("7 ^ 3 = %s\n", tbuf);
 
-    mpow(4.73, 12, &test2);
-    printk(KERN_INFO "4.73 ^ 12 = %s\n", mftoa(test2, &(tbuf[0]), 10));
+    mpow(4.73, 12, &test);
+    mftoa(test, &(tbuf[0]), 5);
+    printk("4.73 ^ 12 = %s\n", tbuf);
 
-    mpow(32.01, 1.54, &test2);
-    printk(KERN_INFO "32.91 ^ 1.54 = %s\n", mftoa(test2, &(tbuf[0]), 10));
+    mpow(32.01, 1.54, &test);
+    mftoa(test, &(tbuf[0]), 5);
+    printk("32.91 ^ 1.54 = %s\n", tbuf);
 
     msin(45.0 * (3.14159265/180.0), &test);
-    printk("sine = %s\n", mftoa(test, &(tbuf[0]), 10));
+    mftoa(test, &(tbuf[0]), 5);
+    printk("sine = %s\n", tbuf);
     
     mcos(60.0 * (3.14159265/180.0), &test);
-    printk("cosine = %s\n", mftoa(test, &(tbuf[0]), 10));
-    kernel_fpu_end();
+    mftoa(test, &(tbuf[0]), 5);
+    printk("cosine = %s\n", tbuf);
 	
     return 0;
 
