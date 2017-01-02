@@ -2,4 +2,4 @@
 
 make insmod
 
-cat xor_clean > /dev/NN
+cat xor_clean.data > /dev/NN
