@@ -1,7 +1,7 @@
 PWD	:= $(shell pwd)
 EXTRA_CFLAGS	:= -I$(PWD)/src/include -I.
 
-obj-m	+= libfann.o
+obj-m	+= libfann.o jiffies.o hz.o nn.o
 libfann-objs	:= math.o twister.o libfann_kmod.o src/fann.o src/fann_cascade.o src/fann_train_data.o src/fann_train.o src/fann_activation.o
 
 all:
