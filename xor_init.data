@@ -1,0 +1,8 @@
+name xor
+num_layers 3
+num_input 2
+num_neurons_hidden 3
+num_output 1
+desired_error 0.0
+max_epochs 100
+epochs_between_reports 1
