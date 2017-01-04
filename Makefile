@@ -1,7 +1,7 @@
 PWD	:= $(shell pwd)
 EXTRA_CFLAGS	:= -I$(PWD)/src/include -I.
 
-obj-m	+= libfann.o jiffies.o libnn.o
+obj-m	+= libfann.o libnn.o
 libfann-objs	:= math.o twister.o libfann_kmod.o src/fann.o src/fann_cascade.o src/fann_train_data.o src/fann_train.o src/fann_activation.o
 libnn-objs		:= math.o nn.o
 
@@ -15,6 +15,9 @@ rmmod:
 insmod:
 	sudo insmod libnn.ko
 	cat xor_init.data > /proc/nn/init
+
+log:
+	sudo tail -n 20 /var/log/syslog
 
 clean:
 	make -C /lib/modules/$(shell uname -r)/build/ M=$(PWD) clean

@@ -15,6 +15,8 @@
 
 #include "math.h"
 
+#define NNNS 50
+
 static struct proc_dir_entry *root_irq_dir;
 
 static char Buf[PAGE_SIZE];      /* The buffer to store last message */
@@ -22,13 +24,34 @@ static char *Buf_Ptr;           /* A pointer to the buffer */
 static int Buf_Char = 0;       /* The number of characters stored */
 static int Bytes_Read = 0;      /* Number of bytes read since open */
 
-static unsigned int num_layers = 0;
-static unsigned int num_input = 0;
-static unsigned int num_neurons_hidden = 0;
-static unsigned int num_output = 0;
-static float desired_error = 0.0;
-static unsigned int max_epochs = 100;
-static unsigned int epochs_between_reports = 1;
+struct nn
+{
+    float desired_error;
+    unsigned int valid;
+    unsigned int num_layers;
+    unsigned int num_input;
+    unsigned int num_neurons_hidden;
+    unsigned int num_output;
+    unsigned int max_epochs;
+    unsigned int epochs_between_reports;
+    char name[50];
+};
+
+static struct nn nns[NNNS];
+
+int getNN(void)
+{
+    int i;
+    
+    for(i=0;i<NNNS;i++)
+    {
+	if(!nns[i].valid)
+	{
+	    return i;
+	}
+    }
+    return -1;
+}
 
 static int
 hz_show(struct seq_file *m, void *v)
@@ -78,10 +101,10 @@ static const struct file_operations hz_fops = {
     .release    = single_release,
 };
 
-static ssize_t 
+static ssize_t
 nn_write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
 {
-    int i, s, e;
+    int i, s, e, n;
     char tmp[100];
     char tmp2[50];
     char tmp3[50];
@@ -102,7 +125,10 @@ nn_write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
     }
 
     s = e = 0;
+    n = getNN();
+    nns[n].valid = 1;
     
+    printk("n -> %d\n", n);
     for(i=0;i<Buf_Char;i++)
     {
 	if(Buf_Ptr[i] == '\n')
@@ -110,47 +136,50 @@ nn_write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
 	    Buf_Ptr[i] = '\0';
 	    
 	    memcpy(tmp, Buf_Ptr+s, 100);
+	    memset(tmp2, 0, 50);
+	    memset(tmp3, 0, 50);
 	    sscanf(tmp, "%s %s", tmp2, tmp3);
 	    
 	    if(strcmp(tmp2, "name") == 0)
 	    {
-		printk("%s -> %s\n", tmp2, tmp3);
+		memcpy(nns[n].name, tmp3, 50);
+		printk("%s -> %s\n", tmp2, nns[n].name);
 	    }
 	    else if(strcmp(tmp2, "desired_error") == 0)
 	    {
-                stof(tmp3, &desired_error);
-		mftoa(desired_error, &(tmp4[0]), 4);
+                stof(tmp3, &(nns[n].desired_error));
+		mftoa(nns[n].desired_error, &(tmp4[0]), 4);
 		printk("desired_error -> %s\n", tmp4);
 	    }
 	    else if(strcmp(tmp2, "num_layers") == 0)
 	    {
-		num_layers = matoi(tmp3);
-		printk("num_layers -> %d\n", num_layers);
+		nns[n].num_layers = matoi(tmp3);
+		printk("num_layers -> %d\n", nns[n].num_layers);
 	    } 
 	    else if(strcmp(tmp2, "num_input") == 0)
 	    {
-		num_input = matoi(tmp3);
-		printk("num_input -> %d\n", num_input);
+		nns[n].num_input = matoi(tmp3);
+		printk("num_input -> %d\n", nns[n].num_input);
 	    }
 	    else if(strcmp(tmp2, "num_neurons_hidden") == 0)
 	    {
-	        num_neurons_hidden = matoi(tmp3);
-		printk("num_neurons_hidden -> %d\n", num_neurons_hidden);
+	        nns[n].num_neurons_hidden = matoi(tmp3);
+		printk("num_neurons_hidden -> %d\n", nns[n].num_neurons_hidden);
 	    }
 	    else if(strcmp(tmp2, "num_output") == 0)
 	    {
-		num_output = matoi(tmp3);
-		printk("num_output -> %d\n", num_output);
+		nns[n].num_output = matoi(tmp3);
+		printk("num_output -> %d\n", nns[n].num_output);
 	    }
 	    else if(strcmp(tmp2, "max_epochs") == 0)
 	    {
-	        max_epochs = matoi(tmp3);
-		printk("max_epochs -> %d\n", max_epochs);
+	        nns[n].max_epochs = matoi(tmp3);
+		printk("max_epochs -> %d\n", nns[n].max_epochs);
 	    }
 	    else if(strcmp(tmp2, "epochs_between_reports") == 0)
 	    {
-	        epochs_between_reports = matoi(tmp3);
-		printk("epochs_between_reports -> %d\n", epochs_between_reports);
+	        nns[n].epochs_between_reports = matoi(tmp3);
+		printk("epochs_between_reports -> %d\n", nns[n].epochs_between_reports);
 	    }
 	    else
 	    {
