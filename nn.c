@@ -75,12 +75,6 @@ void freeNN(void)
     }
 }
 
-static ssize_t 
-nns_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
-{
-    return write_nns(0, file, buffer, count, pos);
-}
-
 static int
 init_open(struct inode *inode, struct file *file)
 {
@@ -129,7 +123,50 @@ static const struct file_operations hz_fops = {
     .release    = single_release,
 };*/
 
-static const struct file_operations irq_affinity_proc_fops = {
+static int
+nns_proc_show(struct seq_file *m, void *v)
+{
+    printk("%s %d 0x%p\n", __PRETTY_FUNCTION__, (int)(long)(PDE_DATA(file_inode(m->file))), v);
+    
+    return 0;
+}
+
+static int
+nns_proc_open(struct inode *inode, struct file *file)
+{
+    unsigned int tmp;
+    
+    tmp = (unsigned int)(long)PDE_DATA(inode); //wtf?
+    printk("%s %d\n", __PRETTY_FUNCTION__, tmp);
+
+    return single_open(file, nns_proc_show, PDE_DATA(inode));
+}
+
+static ssize_t 
+nns_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
+{
+    unsigned int tmp;
+    Buf_Char = 0;
+
+    if (Buf_Char >= PAGE_SIZE) {
+	return 0;
+    }
+    
+    while (count && (Buf_Char < PAGE_SIZE)) 
+    {
+	get_user(Buf_Ptr[Buf_Char], buffer+Buf_Char);
+	
+        count--;
+	Buf_Char++;
+    }
+
+    tmp = (unsigned int)(long)PDE_DATA(file_inode(file)); //wtf?
+    printk("%s %d\n", __PRETTY_FUNCTION__, tmp);
+
+    return Buf_Char;
+}
+
+static const struct file_operations nns_proc_fops = {
     .open           = nns_proc_open,
     .read           = seq_read,
     .llseek         = seq_lseek,
@@ -234,7 +271,7 @@ init_write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
 	return -1;
     }
 
-    proc_create_data(nns[n].name, 0, root_irq_dir, &nns_fops, (void*)(long)n);
+    proc_create_data(nns[n].name, 0, root_irq_dir, &nns_proc_fops, (void*)(long)23);
 
     /*
     {
