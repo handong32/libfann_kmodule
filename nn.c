@@ -13,6 +13,8 @@
 #include <linux/types.h>
 #include <linux/string.h>
 
+#include "math.h"
+
 static struct proc_dir_entry *root_irq_dir;
 
 static char Buf[PAGE_SIZE];      /* The buffer to store last message */
@@ -83,6 +85,7 @@ nn_write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
     char tmp[100];
     char tmp2[50];
     char tmp3[50];
+    char tmp4[20];
     
     Buf_Char = 0;
 
@@ -109,7 +112,51 @@ nn_write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
 	    memcpy(tmp, Buf_Ptr+s, 100);
 	    sscanf(tmp, "%s %s", tmp2, tmp3);
 	    
-	    printk("%s\n", tmp2);
+	    if(strcmp(tmp2, "name") == 0)
+	    {
+		printk("%s -> %s\n", tmp2, tmp3);
+	    }
+	    else if(strcmp(tmp2, "desired_error") == 0)
+	    {
+                stof(tmp3, &desired_error);
+		mftoa(desired_error, &(tmp4[0]), 4);
+		printk("desired_error -> %s\n", tmp4);
+	    }
+	    else if(strcmp(tmp2, "num_layers") == 0)
+	    {
+		num_layers = matoi(tmp3);
+		printk("num_layers -> %d\n", num_layers);
+	    } 
+	    else if(strcmp(tmp2, "num_input") == 0)
+	    {
+		num_input = matoi(tmp3);
+		printk("num_input -> %d\n", num_input);
+	    }
+	    else if(strcmp(tmp2, "num_neurons_hidden") == 0)
+	    {
+	        num_neurons_hidden = matoi(tmp3);
+		printk("num_neurons_hidden -> %d\n", num_neurons_hidden);
+	    }
+	    else if(strcmp(tmp2, "num_output") == 0)
+	    {
+		num_output = matoi(tmp3);
+		printk("num_output -> %d\n", num_output);
+	    }
+	    else if(strcmp(tmp2, "max_epochs") == 0)
+	    {
+	        max_epochs = matoi(tmp3);
+		printk("max_epochs -> %d\n", max_epochs);
+	    }
+	    else if(strcmp(tmp2, "epochs_between_reports") == 0)
+	    {
+	        epochs_between_reports = matoi(tmp3);
+		printk("epochs_between_reports -> %d\n", epochs_between_reports);
+	    }
+	    else
+	    {
+		printk("Unknown input %s, error\n", tmp2);
+		return -1;
+	    }
 	    
 	    s = i+1;
 	}

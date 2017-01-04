@@ -1300,3 +1300,62 @@ void mftoa(double f, char * buf, int precision)
 
 	return;
 }
+
+void stof(char* s, float* ret)
+{
+    int point_seen, d;
+    float rez = 0, fact = 1;
+    
+    if (*s == '-')
+    {
+	s++;
+	fact = -1;
+    }
+    
+    for (point_seen = 0; *s; s++)
+    {
+	if (*s == '.')
+	{
+	    point_seen = 1; 
+	    continue;
+	}
+	
+        d = *s - '0';
+	
+	if (d >= 0 && d <= 9)
+	{
+	    if (point_seen) 
+	    { 
+		fact /= 10.0f;
+	    }
+	    
+	    rez = rez * 10.0f + (float)d;
+	}
+    }
+    *ret = rez * fact;
+}
+
+int misdigit(int c)
+{
+    return (unsigned)c-'0' < 10;
+}
+
+int misspace(int c)
+{
+    return c == ' ' || (unsigned)c-'\t' < 5;
+}
+
+int matoi(char *s)
+{
+    int n=0, neg=0;
+    
+    while (misspace(*s)) s++;
+    switch (*s) {
+    case '-': neg=1;
+    case '+': s++;
+    }
+    /* Compute n as a negative number to avoid overflow on INT_MIN */
+    while (misdigit(*s))
+	n = 10*n - (*s++ - '0');
+    return neg ? n : -n;
+}

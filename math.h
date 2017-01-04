@@ -384,5 +384,9 @@ void mmodf(double, double*, double*);
 int icomp(double x);
 int fcomp(double x);
 void mftoa(double f, char * buf, int precision);
+void stof(char* s, float* ret);
+int misdigit(int c);
+int misspace(int c);
+int matoi(char *s);
 
 #endif
