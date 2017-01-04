@@ -14,6 +14,7 @@
 #include <linux/string.h>
 
 #include "math.h"
+#include "src/include/fann.h"
 
 #define NNNS 50
 
@@ -34,6 +35,8 @@ struct nn
     unsigned int num_output;
     unsigned int max_epochs;
     unsigned int epochs_between_reports;
+    struct fann *ann;
+    struct fann_train_data *data;
     char name[50];
 };
 
@@ -53,21 +56,33 @@ int getNN(void)
     return -1;
 }
 
-static int
-hz_show(struct seq_file *m, void *v)
+void freeNN(void)
 {
-    seq_printf(m, "%d\n", HZ);
-    return 0;
+    int i;
+    
+    for(i=0;i<NNNS;i++)
+    {
+	if(nns[i].valid)
+	{
+	    nns[i].valid = 0;
+	    if(nns[i].ann != NULL)
+	    {
+		fann_destroy(nns[i].ann);
+	    }
+	    
+	    remove_proc_entry(nns[i].name, root_irq_dir);
+	}
+    }
+}
+
+static ssize_t 
+nns_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
+{
+    return write_nns(0, file, buffer, count, pos);
 }
 
 static int
-hz_open(struct inode *inode, struct file *file)
-{
-    return single_open(file, hz_show, NULL);
-}
-
-static int
-nn_open(struct inode *inode, struct file *file)
+init_open(struct inode *inode, struct file *file)
 {
     Buf_Ptr = Buf;
     Bytes_Read = 0;
@@ -75,7 +90,7 @@ nn_open(struct inode *inode, struct file *file)
 }
 
 static ssize_t
-nn_read(struct file *filep, char *buffer, size_t len, loff_t *offset)
+init_read(struct file *filep, char *buffer, size_t len, loff_t *offset)
 {
     int already_read = Bytes_Read;
 
@@ -93,16 +108,37 @@ nn_read(struct file *filep, char *buffer, size_t len, loff_t *offset)
     return Bytes_Read-already_read;
 }
 
+/*static int
+hz_show(struct seq_file *m, void *v)
+{
+    seq_printf(m, "%d\n", HZ);
+    return 0;
+}
+
+static int
+hz_open(struct inode *inode, struct file *file)
+{
+    return single_open(file, hz_show, NULL);
+}
+
 static const struct file_operations hz_fops = {
     .owner      = THIS_MODULE,
     .open       = hz_open,
     .read       = seq_read,
     .llseek     = seq_lseek,
     .release    = single_release,
+};*/
+
+static const struct file_operations irq_affinity_proc_fops = {
+    .open           = nns_proc_open,
+    .read           = seq_read,
+    .llseek         = seq_lseek,
+    .release        = single_release,
+    .write          = nns_proc_write,
 };
 
 static ssize_t
-nn_write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
+init_write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
 {
     int i, s, e, n;
     char tmp[100];
@@ -191,21 +227,42 @@ nn_write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
 	}
     }
 
+    nns[n].ann = fann_create_standard(nns[n].num_layers, nns[n].num_input, nns[n].num_neurons_hidden, nns[n].num_output);
+    if(nns[n].ann == NULL)
+    {
+	printk("ERR cannot allocate ann\n");
+	return -1;
+    }
+
+    proc_create_data(nns[n].name, 0, root_irq_dir, &nns_fops, (void*)(long)n);
+
+    /*
+    {
+	struct proc_dir_entry *entry;
+	entry = proc_create(nns[n].name, 0, root_irq_dir, NULL);
+	if(entry)
+	{
+	    entry->data = (void*)(long)n;
+	    entry->read_proc = nn_read_proc;
+	    entry->write_proc = nn_write_proc;
+	}
+
+	}*/
     return Buf_Char;
 }
 
 static int
-nn_release(struct inode *inodep, struct file *filep){
+init_release(struct inode *inodep, struct file *filep){
     //printk(KERN_INFO "%s Device successfully closed\n", __PRETTY_FUNCTION__);
     return 0;
 }
 
-static const struct file_operations nn_fops = {
+static const struct file_operations init_fops = {
     .owner      = THIS_MODULE,
-    .open       = nn_open,
-    .read       = nn_read,
-    .write      = nn_write,
-    .release = nn_release,
+    .open       = init_open,
+    .read       = init_read,
+    .write      = init_write,
+    .release    = init_release,
 };
 
 static int __init
@@ -215,8 +272,8 @@ nn_proc_init(void)
     if (!root_irq_dir)
 	return -1;
     
-    proc_create("init", 0, root_irq_dir, &nn_fops);
-    proc_create("hz", 0, root_irq_dir, &hz_fops);
+    proc_create("init", 0, root_irq_dir, &init_fops);
+    //proc_create("hz", 0, root_irq_dir, &hz_fops);
 
     printk("Created nn module\n");
     return 0;
@@ -225,8 +282,9 @@ nn_proc_init(void)
 static void __exit
 nn_proc_exit(void)
 {
+    freeNN();
     remove_proc_entry("init", root_irq_dir);
-    remove_proc_entry("hz", root_irq_dir);
+    //remove_proc_entry("hz", root_irq_dir);
     remove_proc_entry("nn", NULL);
     printk("Unloading nn module\n");
 }
