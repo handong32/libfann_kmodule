@@ -216,6 +216,7 @@ init_write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
     n = getNN();
     nns[n].valid = 1;
     
+
     printk("n -> %d\n", n);
     for(i=0;i<Buf_Char;i++)
     {
