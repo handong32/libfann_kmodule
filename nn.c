@@ -31,22 +31,46 @@ struct nn
 {
     float desired_error;
     unsigned int valid;
+    unsigned int num_data;
     unsigned int num_layers;
     unsigned int num_input;
     unsigned int num_neurons_hidden;
     unsigned int num_output;
     unsigned int max_epochs;
     unsigned int epochs_between_reports;
+    unsigned int Buf_Char;
+    unsigned int Bytes_Read;
     struct fann *ann;
     struct fann_train_data *data;
     char *Buf_Ptr;
-    int Buf_Char;
-    int Bytes_Read;
     char Buf[PAGE_SIZE];
     char name[NAMELEN];
 };
 
 static struct nn nns[NNNS];
+
+void initNN(void)
+{
+    int i;
+    
+    for(i=0;i<NNNS;i++)
+    {
+	nns[i].valid = 0;
+	nns[i].desired_error = 0.0;
+	nns[i].num_data = 0;
+	nns[i].num_layers = 0;
+	nns[i].num_input = 0;
+	nns[i].num_neurons_hidden = 0;
+	nns[i].num_output = 0;
+	nns[i].max_epochs = 0;
+	nns[i].epochs_between_reports = 0;
+	nns[i].Buf_Char = 0;
+	nns[i].Bytes_Read = 0;
+	nns[i].ann = NULL;
+	nns[i].data = NULL;
+	nns[i].Buf_Ptr = NULL;
+    }
+}
 
 int getNN(void)
 {
@@ -76,6 +100,12 @@ void freeNN(void)
 		fann_destroy(nns[i].ann);
 		nns[i].ann = NULL;
 	    }
+	    if(nns[i].data != NULL)
+	    {
+		fann_destroy_train(nns[i].data);
+		nns[i].data = NULL;
+	    }
+
 	    printk("Unloading proc -> %s\n", nns[i].name);
 	    remove_proc_entry(nns[i].name, root_irq_dir);
 	    memset(nns[i].name, 0, NAMELEN);
@@ -84,6 +114,29 @@ void freeNN(void)
 	}
     }
 }
+
+void printData(int n)
+{
+    int i, j;
+    
+    for(i=0; i < nns[n].num_data; i++)
+    {
+	printk("i=%d\nInput:\n", i);
+	
+	for(j=0; j<nns[n].num_input; j++)
+	{
+	    printk("\t %d ", (int)(nns[n].data->input[i][j])); 
+	}
+	printk("\nOutput:\n");
+	
+	for(j=0; j<nns[n].num_output; j++)
+	{
+	    printk("\t %d ", (int)(nns[n].data->output[i][j])); 
+	}
+	printk("\n\n");
+    }
+}
+
 static int
 nns_proc_release(struct inode *inodep, struct file *filep){
     return 0;
@@ -111,7 +164,6 @@ nns_proc_read(struct file *file, char *buffer, size_t len, loff_t *offset)
 	len--;
 	nns[n].Bytes_Read++;
     }
-    //printk("%s %s\n", __PRETTY_FUNCTION__, nns[n].Buf);
     
     return nns[n].Bytes_Read-already_read;
 }
@@ -134,6 +186,17 @@ static ssize_t
 nns_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
 {
     unsigned int n;
+    int i, s, e;
+    char tmp[BSIZE];
+    char tmp2[BSIZE];
+    char tmp3[BSIZE];
+    char tbuf[BSIZE];
+    char *tok, *end;
+    long ret;
+    int nd, ni, no;
+    int cio;
+    //float tmp2;
+
     n = (unsigned int)(long)PDE_DATA(file_inode(file)); //wtf?
     printk("%s %d\n", __PRETTY_FUNCTION__, n);
     
@@ -151,6 +214,76 @@ nns_proc_write(struct file *file, const char __user *buffer, size_t count, loff_
 	nns[n].Buf_Char++;
     }
     
+    nd = ni = no = 0;
+    cio = 2;
+    s = e = 0;
+
+    for(i=0;i<nns[n].Buf_Char;i++)
+    {
+	if(nns[n].Buf_Ptr[i] == '\n')
+	{ 
+	    nns[n].Buf_Ptr[i] = '\0';
+	    
+	    memcpy(tmp, nns[n].Buf_Ptr+s, BSIZE);
+	    
+	    tok = tmp;
+	    end = tmp;
+
+	    if(cio == 2) //init
+	    {
+		cio = 1;
+		sscanf(tmp, "%d %d %d", &nns[n].num_data, &nns[n].num_input, &nns[n].num_output);
+		//printk("%d %d %d\n", nns[n].num_data, nns[n].num_input, nns[n].num_output);
+		if(nns[n].data == NULL)
+		{
+		    nns[n].data = fann_create_train(nns[n].num_data, nns[n].num_input, nns[n].num_output);
+		}
+		else
+		{
+		    printk("Error, cannot allocate data\n");
+		    return nns[n].Buf_Char;
+		}
+	    }
+	    else if(cio == 1) //input
+	    {
+		cio = 0;
+
+		//printk("input: ");
+		while(tok != NULL)
+		{
+		    strsep(&end, " ");
+		    ret = simple_strtol(tok, NULL, 10);
+		    //printk("%d %d: %d ", nd, ni,(int)ret);
+		    nns[n].data->input[nd][ni] = ret;
+		    ni ++;
+		    tok = end;
+		}
+		ni = 0;
+		//printk("\n");
+	    }
+	    else //output
+	    {
+		cio = 1;
+		
+		//printk("output: ");
+		while(tok != NULL)
+		{
+		    strsep(&end, " ");
+		    ret = simple_strtol(tok, NULL, 10);
+		    //printk("%d %d: %d ", nd, no,(int)ret);
+		    nns[n].data->output[nd][no] = ret;
+		    no ++;
+		    tok = end;
+		}
+		no = 0;
+		nd ++;
+		//printk("\n");
+	    }
+	    s = i+1;
+	}
+    }
+
+    printData(n);
     return nns[n].Buf_Char;
 }
 
@@ -167,6 +300,8 @@ init_open(struct inode *inode, struct file *file)
 {
     Buf_Ptr = Buf;
     Bytes_Read = 0;
+    
+    
     return 0;
 }
 
@@ -216,7 +351,6 @@ init_write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
     n = getNN();
     nns[n].valid = 1;
     
-
     printk("n -> %d\n", n);
     for(i=0;i<Buf_Char;i++)
     {
@@ -312,6 +446,8 @@ nn_proc_init(void)
     if (!root_irq_dir)
 	return -1;
     
+    initNN();
+
     proc_create("init", 0, root_irq_dir, &init_fops);
     
     printk("Created nn module\n");
