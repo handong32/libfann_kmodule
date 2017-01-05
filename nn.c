@@ -17,6 +17,8 @@
 #include "src/include/fann.h"
 
 #define NNNS 50
+#define NAMELEN 50
+#define BSIZE 100
 
 static struct proc_dir_entry *root_irq_dir;
 
@@ -41,7 +43,7 @@ struct nn
     int Buf_Char;
     int Bytes_Read;
     char Buf[PAGE_SIZE];
-    char name[50];
+    char name[NAMELEN];
 };
 
 static struct nn nns[NNNS];
@@ -72,9 +74,13 @@ void freeNN(void)
 	    if(nns[i].ann != NULL)
 	    {
 		fann_destroy(nns[i].ann);
+		nns[i].ann = NULL;
 	    }
-	    
+	    printk("Unloading proc -> %s\n", nns[i].name);
 	    remove_proc_entry(nns[i].name, root_irq_dir);
+	    memset(nns[i].name, 0, NAMELEN);
+	    memset(nns[i].Buf, 0, PAGE_SIZE);
+	    nns[i].Buf_Ptr = NULL;
 	}
     }
 }
@@ -121,12 +127,6 @@ nns_proc_open(struct inode *inode, struct file *file)
     nns[n].Buf_Ptr = nns[n].Buf;
     nns[n].Bytes_Read = 0;
     
-    /*unsigned int tmp;
-    
-    tmp = (unsigned int)(long)PDE_DATA(inode); //wtf?
-    
-
-    return single_open(file, nns_proc_show, PDE_DATA(inode));*/
     return 0;
 }
 
@@ -193,10 +193,10 @@ static ssize_t
 init_write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
 {
     int i, s, e, n;
-    char tmp[100];
-    char tmp2[50];
-    char tmp3[50];
-    char tmp4[20];
+    char tmp[BSIZE];
+    char tmp2[BSIZE];
+    char tmp3[BSIZE];
+    char tmp4[BSIZE];
     
     Buf_Char = 0;
 
@@ -223,14 +223,14 @@ init_write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
 	{
 	    Buf_Ptr[i] = '\0';
 	    
-	    memcpy(tmp, Buf_Ptr+s, 100);
-	    memset(tmp2, 0, 50);
-	    memset(tmp3, 0, 50);
+	    memcpy(tmp, Buf_Ptr+s, BSIZE);
+	    memset(tmp2, 0, BSIZE);
+	    memset(tmp3, 0, BSIZE);
 	    sscanf(tmp, "%s %s", tmp2, tmp3);
 	    
 	    if(strcmp(tmp2, "name") == 0)
 	    {
-		memcpy(nns[n].name, tmp3, 50);
+		memcpy(nns[n].name, tmp3, BSIZE);
 		printk("%s -> %s\n", tmp2, nns[n].name);
 	    }
 	    else if(strcmp(tmp2, "desired_error") == 0)
@@ -293,7 +293,6 @@ init_write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
 
 static int
 init_release(struct inode *inodep, struct file *filep){
-    //printk(KERN_INFO "%s Device successfully closed\n", __PRETTY_FUNCTION__);
     return 0;
 }
 
@@ -313,8 +312,7 @@ nn_proc_init(void)
 	return -1;
     
     proc_create("init", 0, root_irq_dir, &init_fops);
-    //proc_create("hz", 0, root_irq_dir, &hz_fops);
-
+    
     printk("Created nn module\n");
     return 0;
 }
@@ -324,7 +322,6 @@ nn_proc_exit(void)
 {
     freeNN();
     remove_proc_entry("init", root_irq_dir);
-    //remove_proc_entry("hz", root_irq_dir);
     remove_proc_entry("nn", NULL);
     printk("Unloading nn module\n");
 }
