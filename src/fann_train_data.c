@@ -292,7 +292,8 @@ FANN_EXTERNAL void FANN_API fann_train_on_data(struct fann *ann, struct fann_tra
 
 	if(epochs_between_reports && ann->callback == NULL)
 	{
-	    printk("Max epochs %8d. Desired error: %.10f.\n", max_epochs, desired_error);
+	    mftoa(desired_error, &(tbuf[0]), 5);
+	    printk("Max epochs %8d. Desired error: %s.\n", max_epochs, tbuf);
 	}
 	
 	for(i = 1; i <= max_epochs; i++)
@@ -315,7 +316,7 @@ FANN_EXTERNAL void FANN_API fann_train_on_data(struct fann *ann, struct fann_tra
 			{
 			    /*printk("Epochs     %8d. Current error: %.10f. Bit fail %d.\n", i, error,
 			      ann->num_bit_fail);*/
-			    mftoa(error, &(tbuf[0]), 5);
+			    mftoa(error, &(tbuf[0]), 8);
 
 			    printk("Epochs     %8d. Current error: %s, Bit fail %d.\n", i, tbuf,
 				   ann->num_bit_fail);
