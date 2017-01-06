@@ -28,7 +28,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <linux/slab.h>
 #include <linux/random.h>
 #include "fann_data.h"
-#include "../../twister.h"
+#include "../../rand.h"
 
 #define FANN_FIX_VERSION "FANN_FIX_2.0"
 #define FANN_FLO_VERSION "FANN_FLO_2.1"
@@ -124,14 +124,6 @@ void fann_set_shortcut_connections(struct fann *ann);
 
 int fann_allocate_scale(struct fann *ann);
 
-/*int rand(void)
-{
-    //int tmp;
-    //getrandom((void*)&tmp, 4, GRND_RANDOM);
-    printk(KERN_ERR "rand() called");
-    return 1;
-}*/
-
 /*float exp( a)
 {
     return a;
@@ -148,7 +140,7 @@ int fann_allocate_scale(struct fann *ann);
 
 /*#define fann_clip(x, lo, hi) (x)*/
 
-#define fann_rand(min_value, max_value) (((float)(min_value))+(((float)(max_value)-((float)(min_value)))*randomMT()/(RAND_MAX+1.0f)))
+#define fann_rand(min_value, max_value) (((float)(min_value))+(((float)(max_value)-((float)(min_value)))*rand()/(RAND_MAX+1.0f)))
 
 #define fann_abs(value) (((value) > 0) ? (value) : -(value))
 

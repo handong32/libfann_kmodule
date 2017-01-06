@@ -866,7 +866,7 @@ void fann_update_weights_sarprop(struct fann *ann, unsigned int epoch, unsigned 
 			if(prev_step < step_error_threshold_factor * MSE)
 			{
 			    fann_exp2(-T * epoch + step_error_shift, tmp);
-			    next_step = prev_step * decrease_factor + (float)randomMT() / RAND_MAX * RMSE * (fann_type)(tmp);
+			    next_step = prev_step * decrease_factor + (float)rand() / RAND_MAX * RMSE * (fann_type)(tmp);
 			}
 			else
 				next_step = fann_max(prev_step * decrease_factor, delta_min);

@@ -24,7 +24,7 @@
 
 #include "include/config.h"
 #include "include/fann.h"
-#include "../twister.h"
+#include "../rand.h"
 
 /*
  * Reads training data from a file. 
@@ -368,7 +368,7 @@ FANN_EXTERNAL void FANN_API fann_shuffle_train_data(struct fann_train_data *trai
 
 	for(; dat < train_data->num_data; dat++)
 	{
-		swap = (unsigned int) (randomMT() % train_data->num_data);
+		swap = (unsigned int) (rand() % train_data->num_data);
 		if(swap != dat)
 		{
 			for(elem = 0; elem < train_data->num_input; elem++)

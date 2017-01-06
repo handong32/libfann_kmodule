@@ -94,6 +94,8 @@ void freeNN(void)
     {
 	if(nns[i].valid)
 	{
+	    printk("Unloading proc -> %s\n", nns[i].name);
+	    
 	    nns[i].valid = 0;
 	    if(nns[i].ann != NULL)
 	    {
@@ -105,12 +107,22 @@ void freeNN(void)
 		fann_destroy_train(nns[i].data);
 		nns[i].data = NULL;
 	    }
-
-	    printk("Unloading proc -> %s\n", nns[i].name);
+	    
 	    remove_proc_entry(nns[i].name, root_irq_dir);
 	    memset(nns[i].name, 0, NAMELEN);
 	    memset(nns[i].Buf, 0, PAGE_SIZE);
 	    nns[i].Buf_Ptr = NULL;
+
+	    nns[i].desired_error = 0.0;
+	    nns[i].num_data = 0;
+	    nns[i].num_layers = 0;
+	    nns[i].num_input = 0;
+	    nns[i].num_neurons_hidden = 0;
+	    nns[i].num_output = 0;
+	    nns[i].max_epochs = 0;
+	    nns[i].epochs_between_reports = 0;
+	    nns[i].Buf_Char = 0;
+	    nns[i].Bytes_Read = 0;
 	}
     }
 }
@@ -195,7 +207,6 @@ nns_proc_write(struct file *file, const char __user *buffer, size_t count, loff_
     long ret;
     int nd, ni, no;
     int cio;
-    //float tmp2;
 
     n = (unsigned int)(long)PDE_DATA(file_inode(file)); //wtf?
     printk("%s %d\n", __PRETTY_FUNCTION__, n);
@@ -282,8 +293,23 @@ nns_proc_write(struct file *file, const char __user *buffer, size_t count, loff_
 	    s = i+1;
 	}
     }
+    
+    fann_set_activation_steepness_hidden(nns[n].ann, 1);
+    fann_set_activation_steepness_output(nns[n].ann, 1);
+    
+    fann_set_activation_function_hidden(nns[n].ann, FANN_SIGMOID_SYMMETRIC);
+    fann_set_activation_function_output(nns[n].ann, FANN_SIGMOID_SYMMETRIC);
+    
+    fann_set_train_stop_function(nns[n].ann, FANN_STOPFUNC_BIT);
+    fann_set_bit_fail_limit(nns[n].ann, 0.01f);
+     
+    fann_set_training_algorithm(nns[n].ann, FANN_TRAIN_RPROP);
+    fann_init_weights(nns[n].ann, nns[n].data);
 
-    printData(n);
+    printk("Training network.\n");
+    fann_train_on_data(nns[n].ann, nns[n].data, nns[n].max_epochs, nns[n].epochs_between_reports, nns[n].desired_error);
+
+    //printData(n);
     return nns[n].Buf_Char;
 }
 

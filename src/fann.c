@@ -1873,11 +1873,11 @@ void fann_seed_rand()
 /* 	/\* COMPAT_TIME REPLACEMENT *\/ */
 /* 	srand(GetTickCount()); */
 /* #endif */
-    struct timeval time;
+/*    struct timeval time;
     unsigned long local_time;
     
     do_gettimeofday(&time);
     local_time = (u32)(time.tv_sec - (sys_tz.tz_minuteswest * 60));
-    seedMT(local_time);
+    seedMT(local_time);*/
 }
 

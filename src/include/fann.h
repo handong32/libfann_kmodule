@@ -147,7 +147,7 @@ extern "C"
 #include "fann_io.h"
 #include "fann_activation.h"
 
-#include "../../twister.h"
+#include "../../rand.h"
 
 /* Function: fann_create_standard
 	
